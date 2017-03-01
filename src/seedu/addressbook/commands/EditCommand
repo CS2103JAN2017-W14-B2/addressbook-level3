@@ -1,0 +1,60 @@
+package seedu.addressbook.commands;
+
+import seedu.addressbook.common.Messages;
+import seedu.addressbook.data.person.Person;
+import seedu.addressbook.data.person.ReadOnlyPerson;
+import seedu.addressbook.data.person.UniquePersonList;
+import seedu.addressbook.data.person.Address;
+import seedu.addressbook.data.person.UniquePersonList.PersonNotFoundException;
+import seedu.addressbook.data.exception.IllegalValueException;
+
+public class EditCommand extends Command {
+
+	public static final String COMMAND_WORD = "edit";
+	
+	public static final String MESSAGE_USAGE = COMMAND_WORD + ":\n" + "Edit address of a person identified using it's last displayed index from the address book.\n\t"
+			+ "Parameter: INDEX ADDRESSTYPE/NEWCONTACT\n\t"
+			+ "Example: " + COMMAND_WORD + " 1 a/311, Clementi Ave 2, #02-25";
+	
+	public static final String EDIT_CONTACT_TYPE_ADDRESS = "a";
+	
+    public static final String MESSAGE_EDIT_PERSON_SUCCESS = "Edited Person: %1$s";
+    public static final String MESSAGE_INVALID_ADDRESS = "The contact address: %1$s is invalid";
+    public static final String MESSAGE_DUPLICATE_PERSON = "This person already exists in the address book";
+    
+    private final String address;
+    private final String newContact;
+    
+    public EditCommand (int targetVisibleIndex, String address, String newContact) {
+    	super(targetVisibleIndex);
+    	this.address = address;
+    	this.newContact = newContact;
+    }
+    
+    @Override
+    public CommandResult execute() {
+        try {
+        	final ReadOnlyPerson target = getTargetPerson();
+        	Person personWithNewContact;
+        	switch (address) {
+	    		case EDIT_CONTACT_TYPE_ADDRESS:
+	    			Address newAddress = new Address(newContact, target.getAddress().isPrivate());
+	    			personWithNewContact = new Person(target.getName(), target.getPhone(), target.getEmail(), newAddress, target.getTags());
+	    			break;
+	    		default:
+	    			return new CommandResult(String.format(MESSAGE_INVALID_CONTACT_TYPE, address));
+        	}
+            addressBook.editPerson(target, personWithNewContact);
+            return new CommandResult(String.format(MESSAGE_EDIT_PERSON_SUCCESS, personWithNewContact));
+
+        } catch (IndexOutOfBoundsException ie) {
+            return new CommandResult(Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
+        } catch (PersonNotFoundException pnfe) {
+            return new CommandResult(Messages.MESSAGE_PERSON_NOT_IN_ADDRESSBOOK);
+        } catch (UniquePersonList.DuplicatePersonException dpe) {
+            return new CommandResult(MESSAGE_DUPLICATE_PERSON);
+        } catch (IllegalValueException ive) {
+        	return new CommandResult(String.format(MESSAGE_INVALID_CONTACT_DETAIL, newContact));
+        }
+    }
+}
